@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDOL GROUP - Official Billing System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { --accent: #00f2fe; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e293b; color: #fff; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        
+        .input-panel {
+            width: 400px; background: rgba(255,255,255,0.1); backdrop-filter: blur(15px);
+            border-radius: 15px; padding: 20px; margin-right: 20px; height: 95vh; overflow-y: auto; position: sticky; top: 10px;
+        }
+        .field-group { margin-bottom: 8px; }
+        .flex-fields { display: flex; gap: 10px; }
+        label { display: block; font-size: 10px; color: #94a3b8; margin-bottom: 2px; }
+        input, select { width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid #334155; border-radius: 5px; color: #fff; box-sizing: border-box; font-size: 12px; }
+        select option { background: #1e293b; }
+        
+        input[readonly] { background: rgba(255, 255, 255, 0.05); color: var(--accent); cursor: not-allowed; border-color: var(--accent); font-weight: bold; }
+
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; transition: 0.3s; margin-top: 10px; }
+        .btn-pdf { background: #e11d48; color: white; }
+        .btn-print { background: #0ea5e9; color: white; }
+
+        #bill-content {
+            width: 210mm; min-height: 297mm; padding: 12mm 15mm; background: #fff; color: #000;
+            box-sizing: border-box; box-shadow: 0 0 20px rgba(0,0,0,0.5); margin: auto;
+            display: flex; flex-direction: column; position: relative;
+        }
+        
+        .header-section { border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; }
+        .logo-box img { height: 60px; width: auto; }
+        .header-text { text-align: right; }
+        .header-text h1 { margin: 0; font-size: 24px; font-weight: 800; }
+        .header-text p { margin: 1px 0; font-size: 9px; }
+        
+        .report-title-box { background: #000; color: #fff; display: inline-block; padding: 4px 15px; margin-top: 8px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        
+        .content-area { flex-grow: 1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #000; padding: 6px 8px; text-align: left; font-size: 10.5px; }
+        th { background: #f2f2f2; font-weight: bold; }
+        
+        .total-row { background: #f9f9f9; font-weight: bold; }
+        .highlight-blue { background: #e0f2fe; font-weight: bold; }
+        .highlight-green { background: #f0fdf4; font-weight: bold; border: 1.5px solid #16a34a; }
+
+        .footer-section { margin-top: 20px; padding-bottom: 10px; }
+        .signature-section { display: flex; justify-content: space-between; margin-top: 40px; }
+        .sig-box { border-top: 1.2px solid #000; width: 140px; text-align: center; padding-top: 4px; font-size: 10px; font-weight: bold; }
+
+        @media print {
+            .input-panel { display: none; }
+            body { background: none; padding: 0; }
+            #bill-content { box-shadow: none; margin: 0; width: 210mm; }
+            @page { size: A4; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="input-panel">
+    <h2 style="text-align:center; color:var(--accent); font-size:16px; margin-top:0;">DATA ENTRY</h2>
+    
+    <div class="flex-fields">
+        <div class="field-group">
+            <label>Month</label>
+            <select id="selectMonth">
+                <option value="January">January</option><option value="February">February</option>
+                <option value="March">March</option><option value="April">April</option>
+                <option value="May">May</option><option value="June">June</option>
+                <option value="July">July</option><option value="August">August</option>
+                <option value="September">September</option><option value="October">October</option>
+                <option value="November">November</option><option value="December" selected>December</option>
+            </select>
+        </div>
+        <div class="field-group">
+            <label>Year</label>
+            <select id="selectYear">
+                </select>
+        </div>
+    </div>
+
+    <div class="flex-fields">
+        <div class="field-group"><label>Days in Month</label><input type="number" id="totalDays" value="31"></div>
+        <div class="field-group"><label>Fridays (Off)</label><input type="number" id="offDays" value="4"></div>
+    </div>
+
+    <div class="field-group"><label>Total Working Days (Auto)</label><input type="number" id="workingDaysInput" readonly></div>
+    <div class="field-group"><label>Food Amount (Raw)</label><input type="number" id="foodAmt" placeholder="0"></div>
+    <div class="field-group"><label>Total Gas Bill (100%)</label><input type="number" id="gasFull" placeholder="0"></div>
+    <div class="field-group"><label>Gas Charging Days (Auto)</label><input type="number" id="gasDays" readonly></div>
+    <div class="field-group"><label>Cook Salary</label><input type="number" id="cookSalary" placeholder="0"></div>
+    <div class="field-group"><label>Total Staff (Auto)</label><input type="number" id="totalStaff" readonly></div>
+
+    <h4 style="font-size:11px; color:var(--accent); margin:15px 0 5px; border-bottom:1px solid #444;">Headcount Distribution</h4>
+    
+    <div class="field-group"><label>IDOL GROUP</label><input type="number" class="dist-input" id="p_idol" value="0"></div>
+    <div class="field-group"><label>Bijoy Online Ltd.</label><input type="number" class="dist-input" id="p_bijoy" value="0"></div>
+    <div class="field-group"><label>Attin</label><input type="number" class="dist-input" id="p_attin" value="0"></div>
+    <div class="field-group"><label>Medi-09</label><input type="number" class="dist-input" id="p_medi" value="0"></div>
+    <div class="field-group"><label>Mohaimid Medical Center</label><input type="number" class="dist-input" id="p_mohaimid" value="0"></div>
+    <div class="field-group"><label>Chandshi Medical Center Ltd.</label><input type="number" class="dist-input" id="p_chandshi" value="0"></div>
+    <div class="field-group"><label>IDOL Ace Hygine Ltd.</label><input type="number" class="dist-input" id="p_ace" value="0"></div>
+    <div class="field-group"><label>Mostafa Health Care Ltd.</label><input type="number" class="dist-input" id="p_mostafa" value="0"></div>
+    <div class="field-group"><label>Nazrul Islam Diagnostic</label><input type="number" class="dist-input" id="p_nazrul" value="0"></div>
+    <div class="field-group"><label>Barishal Central Diagnostic Center</label><input type="number" class="dist-input" id="p_barishal" value="0"></div>
+    <div class="field-group"><label>Ferdous Medical Center</label><input type="number" class="dist-input" id="p_ferdous" value="0"></div>
+    <div class="field-group"><label>Turkey Medical Services Ltd.</label><input type="number" class="dist-input" id="p_turkey" value="0"></div>
+    <div class="field-group"><label>Chemon Health Care</label><input type="number" class="dist-input" id="p_chemon" value="0"></div>
+    <div class="field-group"><label>Reda Hamza Diagnostic Center</label><input type="number" class="dist-input" id="p_reda" value="0"></div>
+    <div class="field-group"><label>Staff (2nd & 3rd Fl)</label><input type="number" class="dist-input" id="p_staff" value="0"></div>
+    <div class="field-group"><label>Driver</label><input type="number" class="dist-input" id="p_driver" value="0"></div>
+    <div class="field-group"><label>S. Guard</label><input type="number" class="dist-input" id="p_guard" value="0"></div>
+    <div class="field-group"><label>Guest</label><input type="number" class="dist-input" id="p_guest" value="0"></div>
+
+    <button class="btn-print" onclick="window.print()">🖨️ PRINT REPORT</button>
+    <button class="btn-pdf" onclick="generatePDF()">📕 SAVE TO PDF</button>
+</div>
+
+<div id="bill-content">
+    <div class="header-section">
+        <div class="header-container">
+            <div class="logo-box"><img src="logo.png" alt="IDOL Logo"></div>
+            <div class="header-text">
+                <h1>IDOL GROUP</h1>
+                <p>House-09, Road-27, Block-K, Banani, Dhaka-1213</p>
+                <p style="font-weight:bold;">Staff Food Costing Report (Excluding Fridays)</p>
+                <div class="report-title-box" id="outMonth">Month Of December-2025</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 38%;">Description</th>
+                    <th style="width: 42%;">Calculation Detail</th>
+                    <th style="width: 20%;">Amount (TK)</th>
+                </tr>
+            </thead>
+            <tbody id="billBody"></tbody>
+        </table>
+    </div>
+
+    <div class="footer-section">
+        <div class="signature-section">
+            <div class="sig-box">Prepared By</div>
+            <div class="sig-box">Accounts Dept.</div>
+            <div class="sig-box">Approved By</div>
+        </div>
+        <p style="font-size: 8px; color: #888; margin-top: 15px; text-align: center;">This is a computer generated report. Nobi Hosen © 2026</p>
+    </div>
+</div>
+
+<script>
+    // --- Year Logic ---
+    const yearSelect = document.getElementById('selectYear');
+    const currentYear = new Date().getFullYear();
+    
+    // BC Years (500 to 1)
+    for(let i = 500; i >= 1; i--) {
+        let opt = document.createElement('option');
+        opt.value = i + " BC";
+        opt.innerHTML = i + " BC";
+        yearSelect.appendChild(opt);
+    }
+    
+    // AD Years (1 to Current + 100)
+    for(let i = 1; i <= currentYear + 100; i++) {
+        let opt = document.createElement('option');
+        opt.value = i;
+        opt.innerHTML = i;
+        if(i === 2025) opt.selected = true; // Default set to 2025
+        yearSelect.appendChild(opt);
+    }
+
+    const allInputs = document.querySelectorAll('input, select');
+    const distInputs = document.querySelectorAll('.dist-input');
+
+    allInputs.forEach(input => input.addEventListener('input', updateReport));
+
+    function updateReport() {
+        const month = document.getElementById('selectMonth').value;
+        const year = document.getElementById('selectYear').value;
+        document.getElementById('outMonth').innerText = "Month Of " + month + "-" + year;
+
+        const totalDays = parseInt(document.getElementById('totalDays').value) || 1;
+        const offDays = parseInt(document.getElementById('offDays').value) || 0;
+        const workingDays = totalDays - offDays;
+        
+        document.getElementById('workingDaysInput').value = workingDays;
+        document.getElementById('gasDays').value = workingDays;
+
+        let currentTotalStaff = 0;
+        distInputs.forEach(input => {
+            currentTotalStaff += parseInt(input.value) || 0;
+        });
+        document.getElementById('totalStaff').value = currentTotalStaff;
+
+        const food = parseFloat(document.getElementById('foodAmt').value) || 0;
+        const gasFull = parseFloat(document.getElementById('gasFull').value) || 0;
+        const gasDays = workingDays; 
+        const salary = parseFloat(document.getElementById('cookSalary').value) || 0;
+        const totalStaff = currentTotalStaff || 1;
+
+        const gasCharge = Math.round((gasFull / totalDays) * gasDays);
+        const totalBill = food + gasCharge + salary;
+        const perDayTotalCost = totalBill / (workingDays || 1);
+        const perDayMealCost = perDayTotalCost / totalStaff; 
+        const perPersonMonthly = Math.round(perDayMealCost * workingDays);
+
+        let html = `
+            <tr><td>Raw Food Cost</td><td>Monthly Purchase</td><td>${food.toLocaleString()}</td></tr>
+            <tr><td>Gas Bill (${gasDays} Days)</td><td>(${gasFull.toLocaleString()} ÷ ${totalDays}) × ${gasDays}</td><td>${gasCharge.toLocaleString()}</td></tr>
+            <tr><td>Cook Salary</td><td>Staff Kitchen</td><td>${salary.toLocaleString()}</td></tr>
+            <tr class="total-row"><td>TOTAL MONTHLY BILL</td><td>(Food + Gas + Salary)</td><td>${totalBill.toLocaleString()}/-</td></tr>
+            
+            <tr><td colspan="3" style="background:#f8fafc; font-size:9px; text-align:center;"><b>WORK-DAY ANALYSIS</b></td></tr>
+            <tr><td>Total Working Days</td><td>${totalDays} Days - ${offDays} Fridays</td><td>${workingDays} Days</td></tr>
+            
+            <tr class="highlight-green">
+                <td>PER DAY MEAL COST</td>
+                <td>(${totalBill.toLocaleString()} ÷ ${workingDays} Days) ÷ ${totalStaff} Pers.</td>
+                <td>${perDayMealCost.toFixed(2)}/-</td>
+            </tr>
+
+            <tr class="highlight-blue">
+                <td>PER PERSON (MONTHLY)</td>
+                <td>${perDayMealCost.toFixed(2)} × ${workingDays} Working Days</td>
+                <td>${perPersonMonthly.toLocaleString()}/-</td>
+            </tr>
+            <tr><td colspan="3" style="background:#f2f2f2; text-align:center; font-weight:bold; font-size:10px;">DISTRIBUTION BREAKDOWN</td></tr>
+        `;
+
+        const companies = [
+            { n: "IDOL GROUP", p: parseInt(document.getElementById('p_idol').value) || 0 },
+            { n: "Bijoy Online Ltd.", p: parseInt(document.getElementById('p_bijoy').value) || 0 },
+            { n: "Attin", p: parseInt(document.getElementById('p_attin').value) || 0 },
+            { n: "Medi-09", p: parseInt(document.getElementById('p_medi').value) || 0 },
+            { n: "Mohaimid Medical Center", p: parseInt(document.getElementById('p_mohaimid').value) || 0 },
+            { n: "Chandshi Medical Center Ltd.", p: parseInt(document.getElementById('p_chandshi').value) || 0 },
+            { n: "IDOL Ace Hygine Ltd.", p: parseInt(document.getElementById('p_ace').value) || 0 },
+            { n: "Mostafa Health Care Ltd.", p: parseInt(document.getElementById('p_mostafa').value) || 0 },
+            { n: "Nazrul Islam Diagnostic", p: parseInt(document.getElementById('p_nazrul').value) || 0 },
+            { n: "Barishal Central Diagnostic Center", p: parseInt(document.getElementById('p_barishal').value) || 0 },
+            { n: "Ferdous Medical Center", p: parseInt(document.getElementById('p_ferdous').value) || 0 },
+            { n: "Turkey Medical Services Ltd.", p: parseInt(document.getElementById('p_turkey').value) || 0 },
+            { n: "Chemon Health Care", p: parseInt(document.getElementById('p_chemon').value) || 0 },
+            { n: "Reda Hamza Diagnostic Center", p: parseInt(document.getElementById('p_reda').value) || 0 },
+            { n: "Staff (2nd & 3rd Fl)", p: parseInt(document.getElementById('p_staff').value) || 0 },
+            { n: "Driver", p: parseInt(document.getElementById('p_driver').value) || 0 },
+            { n: "S. Guard", p: parseInt(document.getElementById('p_guard').value) || 0 },
+            { n: "Guest", p: parseInt(document.getElementById('p_guest').value) || 0 }
+        ];
+
+        let distributionTotal = 0;
+        companies.forEach(c => {
+            if(c.p > 0) {
+                const subTotal = Math.round(perPersonMonthly * c.p);
+                distributionTotal += subTotal;
+                html += `<tr><td><strong>${c.n}</strong></td><td>${perPersonMonthly.toLocaleString()} × ${c.p} Persons</td><td><strong>${subTotal.toLocaleString()}/-</strong></td></tr>`;
+            }
+        });
+
+        const adjustment = totalBill - distributionTotal;
+        if(Math.abs(adjustment) > 0) {
+             html += `<tr style="font-size:9px; color:#666;"><td colspan="2">Rounding Adjustment</td><td>${adjustment}/-</td></tr>`;
+             html += `<tr class="total-row" style="background:#eee;"><td>GRAND TOTAL</td><td>Final Distribution</td><td>${(distributionTotal + adjustment).toLocaleString()}/-</td></tr>`;
+        }
+
+        document.getElementById('billBody').innerHTML = html;
+    }
+
+    function generatePDF() {
+        const element = document.getElementById('bill-content');
+        const month = document.getElementById('selectMonth').value;
+        const year = document.getElementById('selectYear').value;
+        const opt = {
+            margin: 0,
+            filename: `IDOL_Report_${month}_${year}.pdf`,
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+
+    window.onload = updateReport;
+</script>
+</body>
+</html>
